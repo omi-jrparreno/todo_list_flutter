@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:todo_list/note.dart';
 import 'package:todo_list/widgets/custom_list_tile.dart';
 
 void main() {
@@ -12,36 +14,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Todo List',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.brown,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Task List'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -49,25 +32,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<String> todoList = [];
+  final List<Note> todoList = [];
   final TextEditingController _textController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   @override
   void initState() {
-    todoList.add("My first todo list");
-    todoList.add("My second todo list");
+    todoList.add(const Note(
+        title: "Groceries",
+        description: "A list of things to buy during Groceries"));
+    //todoList.add("My second todo list");
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    // print("didChange object");
-    super.didChangeDependencies();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 235, 235, 235),
       appBar: AppBar(
         title: Text(widget.title),
       ),
@@ -78,22 +59,27 @@ class _MyHomePageState extends State<MyHomePage> {
               padding: const EdgeInsets.all(20.0),
               child: Column(children: [
                 TextField(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter a search term',
-                  ),
-                  controller: _textController,
-                ),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Add an Item to the List',
+                    ),
+                    controller: _textController),
+                TextField(
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Add an Item Description'),
+                    controller: _descriptionController),
                 ElevatedButton(
                     style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(10.0)),
                     onPressed: () {
-                      // todoList.add(_textController.value.text);
-                      // final temp = [_textController.value.text]
                       setState(() {
-                        todoList.add(_textController.value.text);
+                        todoList.add(Note(
+                            title: _textController.value.text,
+                            description: _descriptionController.value.text));
                       });
                       _textController.text = "";
+                      _descriptionController.text = "";
                     },
                     child: const Text("Save"))
               ]),
@@ -105,10 +91,104 @@ class _MyHomePageState extends State<MyHomePage> {
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: ((context, index) {
                   final data = todoList[index];
-                  return CustomListTile(number: index + 1, text: data);
+                  return Slidable(
+                    endActionPane: ActionPane(
+                      extentRatio: 0.3,
+                      motion: const ScrollMotion(),
+                      children: [
+                        SlidableAction(
+                          label: "Edit",
+                          onPressed: (context) => {
+                            showDialog(
+                                context: context,
+                                builder: (context) => SimpleDialog(
+                                      title: const Text('Edit your List'),
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Column(
+                                            children: [
+                                              TextField(
+                                                decoration:
+                                                    const InputDecoration(
+                                                  labelText: ' Edit Title',
+                                                ),
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _textController.text =
+                                                        value;
+                                                  });
+                                                },
+                                              ),
+                                              TextField(
+                                                decoration:
+                                                    const InputDecoration(
+                                                  labelText:
+                                                      ' Edit Description',
+                                                ),
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _descriptionController
+                                                        .text = value;
+                                                  });
+                                                },
+                                              ),
+                                              ElevatedButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      todoList[index] = Note(
+                                                          title: _textController
+                                                              .value.text,
+                                                          description:
+                                                              _descriptionController
+                                                                  .value.text);
+                                                    });
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text("Update")),
+                                            ],
+                                          ),
+                                        )
+                                      ],
+                                    ))
+                          },
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          icon: Icons.edit,
+                        ),
+                      ],
+                    ),
+                    startActionPane: ActionPane(
+                      extentRatio: 0.3,
+                      motion: const ScrollMotion(),
+                      children: [
+                        SlidableAction(
+                          label: "Delete",
+                          onPressed: (context) => {
+                            setState(
+                              () {
+                                todoList.remove(todoList[index]);
+                              },
+                            )
+                          },
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        CustomListTile(
+                            text: data.title,
+                            number: index + 1,
+                            listDescription: data.description)
+                      ],
+                    ),
+                  );
                 }),
               ),
-            )
+            ),
           ],
         ),
       ),
